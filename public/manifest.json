@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "OpticConnect",
+  "name": "OpticConnect - Plateforme B2B Optique Maroc",
+  "description": "Connectez fournisseurs et opticiens au Maroc",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +21,7 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#D32F2F",
+  "background_color": "#FFFFFF",
+  "categories": ["business", "productivity", "shopping"]
 }
