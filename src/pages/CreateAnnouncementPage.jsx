@@ -98,6 +98,46 @@ const CreateAnnouncementPage = () => {
     }
   };
 
+  // Fonction améliorée pour parser les erreurs du serveur
+  const parseServerErrors = (error) => {
+    console.error('Erreur complète:', error);
+    
+    let errorMessage = 'Erreur lors de la création de l\'annonce';
+    
+    if (error.data && error.data.errors) {
+      const serverErrors = error.data.errors;
+      
+      // Si c'est un tableau d'erreurs
+      if (Array.isArray(serverErrors)) {
+        console.log('Erreurs du serveur (tableau):', serverErrors);
+        errorMessage = serverErrors.join(', ');
+      }
+      // Si c'est un objet avec des erreurs par champ
+      else if (typeof serverErrors === 'object') {
+        console.log('Erreurs du serveur (objet):', serverErrors);
+        const errorList = [];
+        Object.entries(serverErrors).forEach(([field, fieldErrors]) => {
+          if (Array.isArray(fieldErrors)) {
+            errorList.push(...fieldErrors);
+          } else {
+            errorList.push(fieldErrors);
+          }
+        });
+        errorMessage = errorList.join(', ');
+      }
+      // Si c'est une string
+      else if (typeof serverErrors === 'string') {
+        errorMessage = serverErrors;
+      }
+    } 
+    // Si pas d'erreurs spécifiques, utiliser le message principal
+    else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    return errorMessage;
+  };
+
   const validateStep = (step) => {
     const newErrors = {};
     
@@ -190,6 +230,52 @@ const CreateAnnouncementPage = () => {
     setActiveStep(prev => prev - 1);
   };
 
+  // Fonction pour préparer les données avant envoi
+  const prepareAnnouncementData = (status = 'active') => {
+    const announcementData = {
+      title: formData.title.trim(),
+      description: formData.description.trim(),
+      category_id: parseInt(formData.category_id),
+      brand: formData.brand.trim() || '',
+      model: formData.model.trim() || '',
+      condition_type: formData.condition_type,
+      price: parseFloat(formData.price),
+      currency: formData.currency,
+      quantity: parseInt(formData.quantity),
+      city: formData.city,
+      contact_phone: formData.contact_phone.trim() || '',
+      contact_email: formData.contact_email.trim(),
+      contact_whatsapp: formData.contact_whatsapp.trim() || '',
+      status: status
+      // Retirer is_featured et is_urgent car ils ne sont pas autorisés par la validation serveur
+      // is_featured: formData.is_featured,
+      // is_urgent: formData.is_urgent,
+    };
+
+    // Nettoyer les valeurs undefined - remplacer par des chaînes vides au lieu de null
+    Object.keys(announcementData).forEach(key => {
+      if (announcementData[key] === undefined || announcementData[key] === null) {
+        // Pour les champs optionnels, utiliser une chaîne vide au lieu de null
+        if (['brand', 'model', 'contact_phone', 'contact_whatsapp'].includes(key)) {
+          announcementData[key] = '';
+        }
+      }
+      // S'assurer que les valeurs NaN sont remplacées
+      if (typeof announcementData[key] === 'number' && isNaN(announcementData[key])) {
+        if (key === 'price') {
+          announcementData[key] = 0;
+        } else if (['category_id', 'quantity'].includes(key)) {
+          announcementData[key] = 1;
+        }
+      }
+    });
+
+    // Validation finale avant envoi
+    console.log('Données finales préparées:', announcementData);
+    
+    return announcementData;
+  };
+
   const handleSubmit = async () => {
     if (!validateStep(activeStep)) return;
     
@@ -197,34 +283,26 @@ const CreateAnnouncementPage = () => {
       setLoading(true);
       setError('');
 
-      // Étape 1: Préparer les données de l'annonce
       console.log('Préparation des données...');
-      const announcementData = {
-        title: formData.title.trim(),
-        description: formData.description.trim(),
-        category_id: parseInt(formData.category_id),
-        brand: formData.brand.trim() || null,
-        model: formData.model.trim() || null,
-        condition_type: formData.condition_type,
-        price: parseFloat(formData.price),
-        currency: formData.currency,
-        quantity: parseInt(formData.quantity),
-        city: formData.city,
-        contact_phone: formData.contact_phone.trim() || null,
-        contact_email: formData.contact_email.trim(),
-        contact_whatsapp: formData.contact_whatsapp.trim() || null,
-        is_featured: formData.is_featured,
-        is_urgent: formData.is_urgent,
-        status: 'active'
-      };
-
+      const announcementData = prepareAnnouncementData('active');
       console.log('Données à envoyer:', announcementData);
 
-      // Étape 2: Créer l'annonce
+      // Validation supplémentaire côté client
+      if (!announcementData.category_id || isNaN(announcementData.category_id)) {
+        throw new Error('Catégorie invalide');
+      }
+      if (!announcementData.price || isNaN(announcementData.price) || announcementData.price <= 0) {
+        throw new Error('Prix invalide');
+      }
+      if (!announcementData.quantity || isNaN(announcementData.quantity) || announcementData.quantity <= 0) {
+        throw new Error('Quantité invalide');
+      }
+
+      // Créer l'annonce
       const createdAnnouncement = await announcementService.createAnnouncement(announcementData);
       console.log('Annonce créée:', createdAnnouncement);
 
-      // Étape 3: Upload des images si présentes
+      // Upload des images si présentes
       if (selectedImages.length > 0) {
         console.log('Upload des images...');
         try {
@@ -246,23 +324,7 @@ const CreateAnnouncementPage = () => {
       });
 
     } catch (error) {
-      console.error('Erreur complète:', error);
-      
-      // Afficher des détails d'erreur plus précis
-      let errorMessage = 'Erreur lors de la création de l\'annonce';
-      
-      if (error.data && error.data.errors) {
-        // Erreurs de validation du backend
-        const validationErrors = error.data.errors;
-        if (Array.isArray(validationErrors)) {
-          errorMessage = validationErrors.join(', ');
-        } else if (typeof validationErrors === 'object') {
-          errorMessage = Object.values(validationErrors).flat().join(', ');
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
+      const errorMessage = parseServerErrors(error);
       setError(errorMessage);
     } finally {
       setLoading(false);
@@ -274,24 +336,40 @@ const CreateAnnouncementPage = () => {
       setLoading(true);
       setError('');
       
-      const draftData = {
-        title: formData.title.trim() || 'Brouillon sans titre',
-        description: formData.description.trim() || 'Description à compléter',
-        category_id: formData.category_id ? parseInt(formData.category_id) : null,
-        brand: formData.brand.trim() || null,
-        model: formData.model.trim() || null,
-        condition_type: formData.condition_type || 'new',
-        price: formData.price ? parseFloat(formData.price) : null,
-        currency: formData.currency,
-        quantity: formData.quantity ? parseInt(formData.quantity) : 1,
-        city: formData.city || null,
-        contact_phone: formData.contact_phone.trim() || null,
-        contact_email: formData.contact_email.trim() || user?.email,
-        contact_whatsapp: formData.contact_whatsapp.trim() || null,
-        is_featured: formData.is_featured,
-        is_urgent: formData.is_urgent,
-        status: 'draft'
-      };
+      // Validation minimale pour un brouillon
+      if (!formData.title.trim()) {
+        setError('Un titre est requis même pour un brouillon');
+        return;
+      }
+
+      const draftData = prepareAnnouncementData('draft');
+      
+      // Pour un brouillon, permettre des valeurs par défaut
+      if (!draftData.description || draftData.description.trim() === '') {
+        draftData.description = 'Description à compléter';
+      }
+      if (!draftData.category_id || isNaN(draftData.category_id)) {
+        // Obtenir la première catégorie disponible comme défaut
+        if (categories && categories.length > 0) {
+          draftData.category_id = categories[0].id;
+        } else {
+          setError('Aucune catégorie disponible');
+          return;
+        }
+      }
+      if (!draftData.price || isNaN(draftData.price)) {
+        draftData.price = 0;
+      }
+      if (!draftData.city) {
+        draftData.city = 'Non spécifiée';
+      }
+      
+      // S'assurer que tous les champs string sont bien des chaînes vides et pas null
+      ['brand', 'model', 'contact_phone', 'contact_whatsapp'].forEach(field => {
+        if (!draftData[field]) {
+          draftData[field] = '';
+        }
+      });
 
       console.log('Sauvegarde brouillon:', draftData);
 
@@ -313,8 +391,8 @@ const CreateAnnouncementPage = () => {
         }
       });
     } catch (error) {
-      console.error('Erreur sauvegarde brouillon:', error);
-      setError('Erreur lors de la sauvegarde du brouillon');
+      const errorMessage = parseServerErrors(error);
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -619,6 +697,14 @@ const CreateAnnouncementPage = () => {
 
             <Divider />
 
+            <Box sx={{ bgcolor: 'warning.50', p: 2, borderRadius: 2, border: 1, borderColor: 'warning.200' }}>
+              <Typography variant="body2" color="warning.main">
+                ⚠️ <strong>Information :</strong> Les options de mise en avant (À la une et Urgent) ne sont pas disponibles lors de la création. 
+                Elles peuvent être activées après publication par un administrateur.
+              </Typography>
+            </Box>
+
+            {/* Options désactivées temporairement 
             <Box>
               <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
                 Options de mise en avant
@@ -631,9 +717,10 @@ const CreateAnnouncementPage = () => {
                       onChange={handleChange}
                       name="is_featured"
                       color="warning"
+                      disabled
                     />
                   }
-                  label="Mettre en avant (À la une)"
+                  label="Mettre en avant (À la une) - Bientôt disponible"
                 />
                 <FormControlLabel
                   control={
@@ -642,12 +729,14 @@ const CreateAnnouncementPage = () => {
                       onChange={handleChange}
                       name="is_urgent"
                       color="error"
+                      disabled
                     />
                   }
-                  label="Marquer comme urgent"
+                  label="Marquer comme urgent - Bientôt disponible"
                 />
               </Stack>
             </Box>
+            */}
           </Stack>
         );
 

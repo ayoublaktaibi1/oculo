@@ -159,12 +159,10 @@ const Header = () => {
   return (
     <>
       <AppBar 
-        position="sticky" 
+        position="static" 
         elevation={0}
         sx={{
-          bgcolor: 'background.paper',
-          borderBottom: 1,
-          borderColor: 'divider'
+          bgcolor: 'background.paper'
         }}
       >
         <Toolbar sx={{ minHeight: { xs: 64, md: 72 } }}>

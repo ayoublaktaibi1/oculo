@@ -150,20 +150,7 @@ const RegisterPage = () => {
           }}
         >
           {/* En-tête avec logo */}
-          <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
-              <Box
-                sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  bgcolor: 'primary.main',
-                  color: 'white'
-                }}
-              >
-                <InventoryRounded sx={{ fontSize: 32 }} />
-              </Box>
-            </Box>
-            
+          <Box sx={{ textAlign: 'center', mb: 4 }}>            
             <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
               Inscription
             </Typography>
@@ -429,7 +416,7 @@ const RegisterPage = () => {
                       fullWidth
                       name="phone"
                       label="Téléphone"
-                      placeholder="+212 6XX XX XX XX"
+                      placeholder="+212 6XXXXXXXX"
                       value={formData.phone}
                       onChange={handleChange}
                       error={!!errors.phone}

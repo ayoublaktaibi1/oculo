@@ -45,15 +45,6 @@ const AnnouncementPage = () => {
   });
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' ou 'list'
-  
-  useEffect(() => {
-    fetchAnnouncements();
-  }, [searchParams]);
-
-  // Si on a un ID, on affiche le détail de l'annonce
-  if (id) {
-    return <AnnouncementDetail announcementId={id} />;
-  }
 
   // Paramètres de recherche depuis l'URL
   const filters = {
@@ -67,12 +58,40 @@ const AnnouncementPage = () => {
     limit: 20
   };
 
+  // Déclaration de fetchAnnouncements AVANT le useEffect
   const fetchAnnouncements = async () => {
     try {
       setLoading(true);
       setError('');
       
-      const data = await announcementService.searchAnnouncements(filters);
+      // Nettoyer les filtres avant envoi - ne pas envoyer de paramètres vides
+      const cleanFilters = {};
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== '' && value !== '0' && value !== 0 && key !== 'limit') {
+          cleanFilters[key] = value;
+        }
+      });
+      
+      // Toujours inclure limit
+      cleanFilters.limit = filters.limit;
+      
+      console.log('Filtres envoyés:', cleanFilters);
+      
+      // Utiliser getAnnouncements si pas de filtres, sinon searchAnnouncements
+      const hasFilters = Object.keys(cleanFilters).some(key => 
+        key !== 'limit' && key !== 'page' && cleanFilters[key]
+      );
+      
+      let data;
+      if (hasFilters) {
+        data = await announcementService.searchAnnouncements(cleanFilters);
+      } else {
+        // Utiliser la route normale pour récupérer toutes les annonces
+        data = await announcementService.getAnnouncements({
+          page: filters.page,
+          limit: filters.limit
+        });
+      }
       
       setAnnouncements(data.announcements);
       setPagination(data.pagination);
@@ -84,12 +103,25 @@ const AnnouncementPage = () => {
       setLoading(false);
     }
   };
+  
+  useEffect(() => {
+    // Ne pas exécuter la recherche si on affiche les détails d'une annonce
+    if (!id) {
+      fetchAnnouncements();
+    }
+  }, [searchParams, id]);
+
+  // Si on a un ID, on affiche le détail de l'annonce
+  if (id) {
+    return <AnnouncementDetail announcementId={id} />;
+  }
 
   const handleFiltersChange = (newFilters) => {
     const params = new URLSearchParams();
     
+    // Ne pas ajouter les paramètres vides
     Object.entries(newFilters).forEach(([key, value]) => {
-      if (value && value !== '') {
+      if (value && value !== '' && value !== '0' && value !== 0) {
         params.set(key, value);
       }
     });
@@ -128,7 +160,7 @@ const AnnouncementPage = () => {
   const renderAnnouncementGrid = () => (
     <Grid container spacing={3}>
       {announcements.map((announcement) => (
-        <Grid item xs={12} sm={6} md={viewMode === 'grid' ? 4 : 12} key={announcement.id}>
+        <Grid size={{ xs: 12, sm: 6, md: viewMode === 'grid' ? 4 : 12 }} key={announcement.id}>
           <AnnouncementCard announcement={announcement} />
         </Grid>
       ))}
@@ -141,7 +173,7 @@ const AnnouncementPage = () => {
         <Grid container spacing={4}>
           {/* Filtres - Desktop */}
           {!isMobile && (
-            <Grid item md={3}>
+            <Grid size={{ md: 3 }}>
               <Box sx={{ position: 'sticky', top: 24 }}>
                 {renderFilters()}
               </Box>
@@ -149,7 +181,7 @@ const AnnouncementPage = () => {
           )}
 
           {/* Contenu principal */}
-          <Grid item xs={12} md={9}>
+          <Grid size={{ xs: 12, md: 9 }}>
             {/* En-tête avec titre et contrôles */}
             <Paper sx={{ p: 3, mb: 3, border: 1, borderColor: 'grey.200' }}>
               <Stack 

@@ -165,7 +165,7 @@ const HomePage = () => {
             </Typography>
           </Box>
 
-          <Grid container spacing={4}>
+          <Grid container spacing={4} alignItems="stretch">
             {features.map((feature, index) => (
               <Grid item xs={12} md={6} key={index}>
                 <Card
