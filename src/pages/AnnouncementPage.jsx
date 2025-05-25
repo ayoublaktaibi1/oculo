@@ -9,9 +9,19 @@ import {
   Fab,
   useMediaQuery,
   useTheme,
-  Drawer
+  Drawer,
+  Stack,
+  Chip,
+  Paper,
+  Button
 } from '@mui/material';
-import { FilterList } from '@mui/icons-material';
+import { 
+  FilterListRounded, 
+  SearchRounded,
+  CloseRounded,
+  ViewModuleRounded,
+  ViewListRounded
+} from '@mui/icons-material';
 import { useSearchParams, useParams } from 'react-router-dom';
 import { announcementService } from '../services/announcementService';
 import AnnouncementCard from '../components/announcements/AnnouncementCard';
@@ -34,6 +44,7 @@ const AnnouncementPage = () => {
     totalItems: 0
   });
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [viewMode, setViewMode] = useState('grid'); // 'grid' ou 'list'
   
   useEffect(() => {
     fetchAnnouncements();
@@ -95,6 +106,15 @@ const AnnouncementPage = () => {
     const params = new URLSearchParams(searchParams);
     params.set('page', page.toString());
     setSearchParams(params);
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const getActiveFiltersCount = () => {
+    return Object.values(filters).filter(value => 
+      value && value !== '' && value !== '1' && value !== 1
+    ).length;
   };
 
   const renderFilters = () => (
@@ -105,114 +125,200 @@ const AnnouncementPage = () => {
     />
   );
 
+  const renderAnnouncementGrid = () => (
+    <Grid container spacing={3}>
+      {announcements.map((announcement) => (
+        <Grid item xs={12} sm={6} md={viewMode === 'grid' ? 4 : 12} key={announcement.id}>
+          <AnnouncementCard announcement={announcement} />
+        </Grid>
+      ))}
+    </Grid>
+  );
+
   return (
-    <Container maxWidth="xl" sx={{ py: 3 }}>
-      <Grid container spacing={3}>
-        {/* Filtres - Desktop */}
-        {!isMobile && (
-          <Grid item md={3}>
-            <Box sx={{ position: 'sticky', top: 24 }}>
-              {renderFilters()}
-            </Box>
+    <Box sx={{ bgcolor: 'grey.50', minHeight: '100vh' }}>
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Grid container spacing={4}>
+          {/* Filtres - Desktop */}
+          {!isMobile && (
+            <Grid item md={3}>
+              <Box sx={{ position: 'sticky', top: 24 }}>
+                {renderFilters()}
+              </Box>
+            </Grid>
+          )}
+
+          {/* Contenu principal */}
+          <Grid item xs={12} md={9}>
+            {/* En-tête avec titre et contrôles */}
+            <Paper sx={{ p: 3, mb: 3, border: 1, borderColor: 'grey.200' }}>
+              <Stack 
+                direction={{ xs: 'column', sm: 'row' }} 
+                justifyContent="space-between" 
+                alignItems={{ xs: 'flex-start', sm: 'center' }}
+                spacing={2}
+              >
+                <Box>
+                  <Typography variant="h4" sx={{ fontWeight: 700, mb: 1 }}>
+                    {filters.q ? `Résultats pour "${filters.q}"` : 'Toutes les annonces'}
+                  </Typography>
+                  
+                  {!loading && (
+                    <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                      <Typography variant="body2" color="text.secondary">
+                        {pagination.totalItems} annonce{pagination.totalItems > 1 ? 's' : ''} trouvée{pagination.totalItems > 1 ? 's' : ''}
+                      </Typography>
+                      
+                      {getActiveFiltersCount() > 0 && (
+                        <Chip
+                          size="small"
+                          label={`${getActiveFiltersCount()} filtre${getActiveFiltersCount() > 1 ? 's' : ''}`}
+                          color="primary"
+                          variant="outlined"
+                        />
+                      )}
+                    </Stack>
+                  )}
+                </Box>
+
+                {/* Contrôles de vue - Desktop seulement */}
+                {!isMobile && announcements.length > 0 && (
+                  <Stack direction="row" spacing={1}>
+                    <Button
+                      variant={viewMode === 'grid' ? 'contained' : 'outlined'}
+                      size="small"
+                      onClick={() => setViewMode('grid')}
+                      startIcon={<ViewModuleRounded />}
+                    >
+                      Grille
+                    </Button>
+                    <Button
+                      variant={viewMode === 'list' ? 'contained' : 'outlined'}
+                      size="small"
+                      onClick={() => setViewMode('list')}
+                      startIcon={<ViewListRounded />}
+                    >
+                      Liste
+                    </Button>
+                  </Stack>
+                )}
+              </Stack>
+            </Paper>
+
+            {error && (
+              <Alert 
+                severity="error" 
+                sx={{ mb: 3, borderRadius: 2 }}
+                onClose={() => setError('')}
+              >
+                {error}
+              </Alert>
+            )}
+
+            {loading ? (
+              <Box sx={{ py: 8 }}>
+                <Loading message="Recherche en cours..." />
+              </Box>
+            ) : announcements.length === 0 ? (
+              <Paper
+                sx={{
+                  textAlign: 'center',
+                  py: 8,
+                  px: 4,
+                  border: 1,
+                  borderColor: 'grey.200'
+                }}
+              >
+                <SearchRounded sx={{ fontSize: 64, color: 'grey.400', mb: 2 }} />
+                <Typography variant="h5" gutterBottom sx={{ fontWeight: 600 }}>
+                  Aucune annonce trouvée
+                </Typography>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                  Essayez de modifier vos critères de recherche ou explorez d'autres catégories
+                </Typography>
+                <Button
+                  variant="outlined"
+                  onClick={() => handleFiltersChange({})}
+                >
+                  Effacer les filtres
+                </Button>
+              </Paper>
+            ) : (
+              <>
+                {/* Grille des annonces */}
+                {renderAnnouncementGrid()}
+
+                {/* Pagination */}
+                {pagination.totalPages > 1 && (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}>
+                    <Paper sx={{ p: 2, border: 1, borderColor: 'grey.200' }}>
+                      <Pagination
+                        count={pagination.totalPages}
+                        page={pagination.currentPage}
+                        onChange={handlePageChange}
+                        color="primary"
+                        size={isMobile ? 'small' : 'medium'}
+                        showFirstButton
+                        showLastButton
+                        siblingCount={isMobile ? 0 : 1}
+                      />
+                    </Paper>
+                  </Box>
+                )}
+              </>
+            )}
           </Grid>
+        </Grid>
+
+        {/* Bouton filtres mobile */}
+        {isMobile && (
+          <Fab
+            color="primary"
+            sx={{ 
+              position: 'fixed', 
+              bottom: 24, 
+              right: 24,
+              zIndex: theme.zIndex.fab
+            }}
+            onClick={() => setMobileFiltersOpen(true)}
+          >
+            <FilterListRounded />
+          </Fab>
         )}
 
-        {/* Contenu principal */}
-        <Grid item xs={12} md={9}>
-          {/* En-tête */}
-          <Box sx={{ mb: 3 }}>
-            <Typography variant="h4" component="h1" gutterBottom>
-              {filters.q ? `Résultats pour "${filters.q}"` : 'Toutes les annonces'}
-            </Typography>
-            
-            {!loading && (
-              <Typography variant="body2" color="text.secondary">
-                {pagination.totalItems} annonce{pagination.totalItems > 1 ? 's' : ''} trouvée{pagination.totalItems > 1 ? 's' : ''}
-              </Typography>
-            )}
-          </Box>
-
-          {error && (
-            <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
-            </Alert>
-          )}
-
-          {loading ? (
-            <Loading message="Recherche en cours..." />
-          ) : announcements.length === 0 ? (
-            <Box
-              sx={{
-                textAlign: 'center',
-                py: 8,
-                px: 2
-              }}
-            >
-              <Typography variant="h6" gutterBottom>
-                Aucune annonce trouvée
-              </Typography>
-              <Typography variant="body1" color="text.secondary">
-                Essayez de modifier vos critères de recherche
-              </Typography>
-            </Box>
-          ) : (
-            <>
-              {/* Grille des annonces */}
-              <Grid container spacing={3}>
-                {announcements.map((announcement) => (
-                  <Grid item xs={12} sm={6} lg={4} key={announcement.id}>
-                    <AnnouncementCard announcement={announcement} />
-                  </Grid>
-                ))}
-              </Grid>
-
-              {/* Pagination */}
-              {pagination.totalPages > 1 && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                  <Pagination
-                    count={pagination.totalPages}
-                    page={pagination.currentPage}
-                    onChange={handlePageChange}
-                    color="primary"
-                    size={isMobile ? 'small' : 'medium'}
-                    showFirstButton
-                    showLastButton
-                  />
-                </Box>
-              )}
-            </>
-          )}
-        </Grid>
-      </Grid>
-
-      {/* Bouton filtres mobile */}
-      {isMobile && (
-        <Fab
-          color="primary"
-          sx={{ position: 'fixed', bottom: 16, right: 16 }}
-          onClick={() => setMobileFiltersOpen(true)}
+        {/* Drawer filtres mobile */}
+        <Drawer
+          anchor="bottom"
+          open={mobileFiltersOpen}
+          onClose={() => setMobileFiltersOpen(false)}
+          PaperProps={{
+            sx: { 
+              maxHeight: '85vh', 
+              borderRadius: '16px 16px 0 0',
+              border: 1,
+              borderColor: 'grey.200'
+            }
+          }}
         >
-          <FilterList />
-        </Fab>
-      )}
-
-      {/* Drawer filtres mobile */}
-      <Drawer
-        anchor="bottom"
-        open={mobileFiltersOpen}
-        onClose={() => setMobileFiltersOpen(false)}
-        PaperProps={{
-          sx: { maxHeight: '80vh', borderRadius: '16px 16px 0 0' }
-        }}
-      >
-        <Box sx={{ p: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            Filtrer les résultats
-          </Typography>
-          {renderFilters()}
-        </Box>
-      </Drawer>
-    </Container>
+          <Box sx={{ p: 3 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 3 }}>
+              <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                Filtrer les résultats
+              </Typography>
+              <Button
+                onClick={() => setMobileFiltersOpen(false)}
+                startIcon={<CloseRounded />}
+                variant="outlined"
+                size="small"
+              >
+                Fermer
+              </Button>
+            </Stack>
+            {renderFilters()}
+          </Box>
+        </Drawer>
+      </Container>
+    </Box>
   );
 };
 

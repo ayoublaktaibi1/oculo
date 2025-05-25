@@ -10,15 +10,18 @@ import {
   Avatar,
   Box,
   useMediaQuery,
-  useTheme
+  useTheme,
+  Stack,
+  Divider
 } from '@mui/material';
 import {
-  AccountCircle,
-  Dashboard,
-  Add,
-  Search,
-  ExitToApp,
-  Menu as MenuIcon
+  AccountCircleRounded,
+  DashboardRounded,
+  AddRounded,
+  SearchRounded,
+  ExitToAppRounded,
+  MenuRounded,
+  InventoryRounded
 } from '@mui/icons-material';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -67,26 +70,50 @@ const Header = () => {
       transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       open={Boolean(anchorEl)}
       onClose={handleMenuClose}
+      PaperProps={{
+        sx: {
+          mt: 1,
+          minWidth: 200
+        }
+      }}
     >
-      <MenuItem onClick={() => handleNavigation('/profile')}>
-        <AccountCircle sx={{ mr: 1 }} />
+      <Box sx={{ px: 2, py: 1.5 }}>
+        <Typography variant="subtitle2" color="text.secondary">
+          Connecté en tant que
+        </Typography>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          {user?.first_name} {user?.last_name}
+        </Typography>
+        {user?.company_name && (
+          <Typography variant="caption" color="text.secondary">
+            {user.company_name}
+          </Typography>
+        )}
+      </Box>
+      
+      <Divider />
+      
+      <MenuItem onClick={() => handleNavigation('/profile')} sx={{ py: 1.5 }}>
+        <AccountCircleRounded sx={{ mr: 2, fontSize: 20 }} />
         Mon Profil
       </MenuItem>
       
-      <MenuItem onClick={() => handleNavigation('/dashboard')}>
-        <Dashboard sx={{ mr: 1 }} />
+      <MenuItem onClick={() => handleNavigation('/dashboard')} sx={{ py: 1.5 }}>
+        <DashboardRounded sx={{ mr: 2, fontSize: 20 }} />
         Tableau de bord
       </MenuItem>
       
       {user?.role === 'supplier' && (
-        <MenuItem onClick={() => handleNavigation('/announcements/create')}>
-          <Add sx={{ mr: 1 }} />
+        <MenuItem onClick={() => handleNavigation('/announcements/create')} sx={{ py: 1.5 }}>
+          <AddRounded sx={{ mr: 2, fontSize: 20 }} />
           Nouvelle annonce
         </MenuItem>
       )}
       
-      <MenuItem onClick={handleLogout}>
-        <ExitToApp sx={{ mr: 1 }} />
+      <Divider />
+      
+      <MenuItem onClick={handleLogout} sx={{ py: 1.5, color: 'error.main' }}>
+        <ExitToAppRounded sx={{ mr: 2, fontSize: 20 }} />
         Déconnexion
       </MenuItem>
     </Menu>
@@ -99,22 +126,29 @@ const Header = () => {
       transformOrigin={{ vertical: 'top', horizontal: 'right' }}
       open={Boolean(mobileMenuAnchor)}
       onClose={handleMobileMenuClose}
+      PaperProps={{
+        sx: {
+          mt: 1,
+          minWidth: 200
+        }
+      }}
     >
-      <MenuItem onClick={() => handleNavigation('/')}>
+      <MenuItem onClick={() => handleNavigation('/')} sx={{ py: 1.5 }}>
         Accueil
       </MenuItem>
       
-      <MenuItem onClick={() => handleNavigation('/announcements')}>
-        <Search sx={{ mr: 1 }} />
+      <MenuItem onClick={() => handleNavigation('/announcements')} sx={{ py: 1.5 }}>
+        <SearchRounded sx={{ mr: 2, fontSize: 20 }} />
         Rechercher
       </MenuItem>
       
       {!isAuthenticated && (
         <>
-          <MenuItem onClick={() => handleNavigation('/login')}>
+          <Divider />
+          <MenuItem onClick={() => handleNavigation('/login')} sx={{ py: 1.5 }}>
             Connexion
           </MenuItem>
-          <MenuItem onClick={() => handleNavigation('/register')}>
+          <MenuItem onClick={() => handleNavigation('/register')} sx={{ py: 1.5 }}>
             Inscription
           </MenuItem>
         </>
@@ -124,39 +158,63 @@ const Header = () => {
 
   return (
     <>
-        <AppBar 
-          position="sticky" 
-          elevation={0}
-          sx={{
-            backgroundColor: 'primary.main',
-            borderBottom: '1px solid',
-            borderColor: 'divider'
-          }}
-        >
-        <Toolbar>
+      <AppBar 
+        position="sticky" 
+        elevation={0}
+        sx={{
+          bgcolor: 'background.paper',
+          borderBottom: 1,
+          borderColor: 'divider'
+        }}
+      >
+        <Toolbar sx={{ minHeight: { xs: 64, md: 72 } }}>
           {/* Logo */}
-          <Typography
-            variant="h6"
+          <Box
             component={Link}
             to="/"
             sx={{
-              flexGrow: 1,
+              display: 'flex',
+              alignItems: 'center',
               textDecoration: 'none',
               color: 'inherit',
-              fontWeight: 'bold'
+              mr: 4
             }}
           >
-            OpticConnect
-          </Typography>
+            <InventoryRounded 
+              sx={{ 
+                fontSize: 32, 
+                color: 'primary.main', 
+                mr: 1.5 
+              }} 
+            />
+            <Typography
+              variant="h6"
+              sx={{
+                fontWeight: 700,
+                color: 'text.primary',
+                fontSize: { xs: '1.1rem', md: '1.25rem' }
+              }}
+            >
+              OpticConnect
+            </Typography>
+          </Box>
+
+          {/* Spacer */}
+          <Box sx={{ flexGrow: 1 }} />
 
           {!isMobile && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Stack direction="row" spacing={2} alignItems="center">
               {/* Navigation Desktop */}
               <Button
                 color="inherit"
                 component={Link}
                 to="/announcements"
-                startIcon={<Search />}
+                startIcon={<SearchRounded />}
+                sx={{ 
+                  color: 'text.primary',
+                  fontWeight: 500,
+                  px: 2
+                }}
               >
                 Rechercher
               </Button>
@@ -167,24 +225,25 @@ const Header = () => {
                     color="inherit"
                     component={Link}
                     to="/dashboard"
-                    startIcon={<Dashboard />}
+                    startIcon={<DashboardRounded />}
+                    sx={{ 
+                      color: 'text.primary',
+                      fontWeight: 500,
+                      px: 2
+                    }}
                   >
                     Dashboard
                   </Button>
 
                   {user?.role === 'supplier' && (
                     <Button
-                      color="inherit"
+                      variant="outlined"
                       component={Link}
                       to="/announcements/create"
-                      startIcon={<Add />}
-                      variant="outlined"
+                      startIcon={<AddRounded />}
                       sx={{ 
-                        borderColor: 'white',
-                        '&:hover': { 
-                          borderColor: 'white',
-                          backgroundColor: 'rgba(255,255,255,0.1)'
-                        }
+                        px: 2,
+                        fontWeight: 500
                       }}
                     >
                       Nouvelle annonce
@@ -198,9 +257,11 @@ const Header = () => {
                   >
                     <Avatar
                       sx={{ 
-                        bgcolor: theme.palette.secondary.main,
-                        width: 32,
-                        height: 32
+                        bgcolor: 'primary.main',
+                        width: 36,
+                        height: 36,
+                        fontSize: '1rem',
+                        fontWeight: 600
                       }}
                     >
                       {user?.first_name?.charAt(0)?.toUpperCase()}
@@ -208,32 +269,33 @@ const Header = () => {
                   </IconButton>
                 </>
               ) : (
-                <Box sx={{ display: 'flex', gap: 1 }}>
+                <Stack direction="row" spacing={1}>
                   <Button
                     color="inherit"
                     component={Link}
                     to="/login"
+                    sx={{ 
+                      color: 'text.primary',
+                      fontWeight: 500,
+                      px: 2
+                    }}
                   >
                     Connexion
                   </Button>
                   <Button
-                    variant="outlined"
+                    variant="contained"
                     component={Link}
                     to="/register"
                     sx={{ 
-                      borderColor: 'white',
-                      color: 'white',
-                      '&:hover': { 
-                        borderColor: 'white',
-                        backgroundColor: 'rgba(255,255,255,0.1)'
-                      }
+                      px: 2,
+                      fontWeight: 500
                     }}
                   >
                     Inscription
                   </Button>
-                </Box>
+                </Stack>
               )}
-            </Box>
+            </Stack>
           )}
 
           {/* Menu mobile */}
@@ -241,19 +303,22 @@ const Header = () => {
             <IconButton
               color="inherit"
               onClick={isAuthenticated ? handleProfileMenuOpen : handleMobileMenuOpen}
+              sx={{ color: 'text.primary' }}
             >
               {isAuthenticated ? (
                 <Avatar
                   sx={{ 
-                    bgcolor: theme.palette.secondary.main,
+                    bgcolor: 'primary.main',
                     width: 32,
-                    height: 32
+                    height: 32,
+                    fontSize: '0.875rem',
+                    fontWeight: 600
                   }}
                 >
                   {user?.first_name?.charAt(0)?.toUpperCase()}
                 </Avatar>
               ) : (
-                <MenuIcon />
+                <MenuRounded />
               )}
             </IconButton>
           )}

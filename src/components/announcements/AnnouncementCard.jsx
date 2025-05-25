@@ -6,17 +6,18 @@ import {
   Typography,
   Box,
   Chip,
-  IconButton,
   CardActions,
-  Button
+  Button,
+  Stack,
+  Avatar
 } from '@mui/material';
 import {
-  LocationOn,
-  Visibility,
-  Phone,
-  Email,
-  WhatsApp,
-  AccessTime
+  LocationOnRounded,
+  VisibilityRounded,
+  AccessTimeRounded,
+  BusinessRounded,
+  EditRounded,
+  DeleteRounded
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { formatPrice, formatRelativeDate, truncateText } from '../../utils/formatters';
@@ -27,13 +28,6 @@ const AnnouncementCard = ({ announcement, showActions = false, onContact, onEdit
 
   const handleCardClick = () => {
     navigate(`/announcements/${announcement.id}`);
-  };
-
-  const handleContactClick = (e, contactType) => {
-    e.stopPropagation();
-    if (onContact) {
-      onContact(announcement.id, contactType);
-    }
   };
 
   const handleActionClick = (e, action) => {
@@ -60,92 +54,95 @@ const AnnouncementCard = ({ announcement, showActions = false, onContact, onEdit
         flexDirection: 'column',
         cursor: 'pointer',
         transition: 'all 0.2s ease-in-out',
+        border: 1,
+        borderColor: 'grey.200',
         '&:hover': {
-          transform: 'translateY(-2px)',
-          boxShadow: '0 8px 25px rgba(0,0,0,0.15)'
+          transform: 'translateY(-4px)',
+          boxShadow: 3,
+          borderColor: 'primary.main'
         }
       }}
       onClick={handleCardClick}
     >
       {/* Image */}
-      <CardMedia
-        component="div"
-        sx={{
-          height: 200,
-          position: 'relative',
-          backgroundImage: primaryImage 
-            ? `url(${primaryImage.cloudinary_secure_url})`
-            : 'url(/api/placeholder/300/200)',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center'
-        }}
-      >
-        {/* Badges */}
-        <Box sx={{ position: 'absolute', top: 8, left: 8, right: 8 }}>
+      <Box sx={{ position: 'relative' }}>
+        <CardMedia
+          component="div"
+          sx={{
+            height: 200,
+            backgroundImage: primaryImage 
+              ? `url(${primaryImage.cloudinary_secure_url})`
+              : 'url(/api/placeholder/300/200)',
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+            bgcolor: 'grey.100'
+          }}
+        />
+        
+        {/* Badges en haut */}
+        <Box sx={{ position: 'absolute', top: 12, left: 12, right: 12 }}>
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+            <Stack spacing={1}>
               {announcement.is_featured && (
                 <Chip
                   label="À la une"
                   size="small"
-                  sx={{
-                    bgcolor: 'warning.main',
-                    color: 'white',
-                    fontWeight: 'bold'
-                  }}
+                  color="warning"
+                  sx={{ fontWeight: 600, fontSize: '0.75rem' }}
                 />
               )}
               {announcement.is_urgent && (
                 <Chip
                   label="Urgent"
                   size="small"
-                  sx={{
-                    bgcolor: 'error.main',
-                    color: 'white',
-                    fontWeight: 'bold'
-                  }}
+                  color="error"
+                  sx={{ fontWeight: 600, fontSize: '0.75rem' }}
                 />
               )}
-            </Box>
+            </Stack>
             
             <Chip
               label={CONDITION_LABELS[announcement.condition_type]}
               size="small"
+              variant="filled"
               sx={{
-                bgcolor: 'rgba(255,255,255,0.9)',
-                color: 'text.primary'
+                bgcolor: 'background.paper',
+                color: 'text.primary',
+                fontWeight: 500,
+                fontSize: '0.75rem'
               }}
             />
           </Box>
         </Box>
 
-        {/* Prix */}
-        <Box sx={{ position: 'absolute', bottom: 8, right: 8 }}>
+        {/* Prix en bas à droite */}
+        <Box sx={{ position: 'absolute', bottom: 12, right: 12 }}>
           <Chip
             label={formatPrice(announcement.price, announcement.currency)}
+            color="primary"
             sx={{
-              bgcolor: 'primary.main',
-              color: 'white',
-              fontWeight: 'bold',
-              fontSize: '1rem'
+              fontWeight: 700,
+              fontSize: '0.875rem',
+              px: 1
             }}
           />
         </Box>
-      </CardMedia>
+      </Box>
 
       {/* Contenu */}
-      <CardContent sx={{ flexGrow: 1, p: 2 }}>
+      <CardContent sx={{ flexGrow: 1, p: 3 }}>
         <Typography
           variant="h6"
           component="h3"
           sx={{
-            fontWeight: 'bold',
-            mb: 1,
+            fontWeight: 600,
+            mb: 1.5,
             lineHeight: 1.3,
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            minHeight: '2.6em'
           }}
         >
           {announcement.title}
@@ -159,66 +156,90 @@ const AnnouncementCard = ({ announcement, showActions = false, onContact, onEdit
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
-            overflow: 'hidden'
+            overflow: 'hidden',
+            lineHeight: 1.4,
+            minHeight: '2.8em'
           }}
         >
           {truncateText(announcement.description, 100)}
         </Typography>
 
-        {/* Métadonnées */}
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+        {/* Métadonnées avec icônes */}
+        <Stack spacing={1.5}>
           {announcement.brand && (
-            <Typography variant="body2" sx={{ fontWeight: 'medium' }}>
-              <strong>Marque:</strong> {announcement.brand}
-              {announcement.model && ` - ${announcement.model}`}
-            </Typography>
+            <Box>
+              <Typography variant="body2" sx={{ fontWeight: 500, color: 'text.primary' }}>
+                {announcement.brand}
+                {announcement.model && ` • ${announcement.model}`}
+              </Typography>
+            </Box>
           )}
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <LocationOn fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
-              {announcement.city || 'Non spécifié'}
-            </Typography>
-          </Box>
+          <Stack spacing={1}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <LocationOnRounded sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="body2" color="text.secondary">
+                {announcement.city || 'Non spécifié'}
+              </Typography>
+            </Box>
 
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <AccessTime fontSize="small" color="action" />
-            <Typography variant="body2" color="text.secondary">
-              {formatRelativeDate(announcement.created_at)}
-            </Typography>
-          </Box>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <AccessTimeRounded sx={{ fontSize: 16, color: 'text.secondary' }} />
+              <Typography variant="body2" color="text.secondary">
+                {formatRelativeDate(announcement.created_at)}
+              </Typography>
+            </Box>
+          </Stack>
 
+          {/* Fournisseur */}
           {announcement.user && (
-            <Typography variant="body2" color="text.secondary">
-              <strong>Fournisseur:</strong> {announcement.user.company_name || `${announcement.user.first_name} ${announcement.user.last_name}`}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pt: 1 }}>
+              <Avatar
+                sx={{
+                  bgcolor: 'primary.main',
+                  width: 24,
+                  height: 24,
+                  fontSize: '0.75rem'
+                }}
+              >
+                {announcement.user.company_name ? (
+                  <BusinessRounded sx={{ fontSize: 14 }} />
+                ) : (
+                  announcement.user.first_name?.charAt(0)?.toUpperCase()
+                )}
+              </Avatar>
+              <Typography variant="body2" color="text.secondary" sx={{ fontSize: '0.8125rem' }}>
+                {announcement.user.company_name || 
+                 `${announcement.user.first_name} ${announcement.user.last_name}`}
+              </Typography>
+            </Box>
           )}
-        </Box>
+        </Stack>
       </CardContent>
 
       {/* Actions */}
-      <CardActions sx={{ p: 2, pt: 0, justifyContent: 'space-between' }}>
+      <CardActions sx={{ p: 3, pt: 0 }}>
         {!showActions ? (
-          // Actions publiques (contact)
-          <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
-            <Button
-              variant="contained"
-              size="small"
-              startIcon={<Visibility />}
-              onClick={handleCardClick}
-              fullWidth
-            >
-              Voir détails
-            </Button>
-          </Box>
+          // Actions publiques
+          <Button
+            variant="contained"
+            size="small"
+            startIcon={<VisibilityRounded />}
+            onClick={handleCardClick}
+            fullWidth
+            sx={{ py: 1 }}
+          >
+            Voir détails
+          </Button>
         ) : (
           // Actions propriétaire
-          <Box sx={{ display: 'flex', gap: 1, width: '100%' }}>
+          <Stack direction="row" spacing={1} sx={{ width: '100%' }}>
             <Button
               variant="outlined"
               size="small"
+              startIcon={<EditRounded />}
               onClick={(e) => handleActionClick(e, 'edit')}
-              fullWidth
+              sx={{ flex: 1, py: 1 }}
             >
               Modifier
             </Button>
@@ -226,12 +247,13 @@ const AnnouncementCard = ({ announcement, showActions = false, onContact, onEdit
               variant="outlined"
               size="small"
               color="error"
+              startIcon={<DeleteRounded />}
               onClick={(e) => handleActionClick(e, 'delete')}
-              fullWidth
+              sx={{ flex: 1, py: 1 }}
             >
               Supprimer
             </Button>
-          </Box>
+          </Stack>
         )}
       </CardActions>
     </Card>
